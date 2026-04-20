@@ -1,0 +1,168 @@
+'use strict';
+
+const politicasModel = require('../models/politicasModel');
+const produtosModel = require('../models/produtosModel');
+
+function formatarData(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
+
+async function listar(req, res) {
+  try {
+    const politicas = await politicasModel.listar();
+    res.json(politicas);
+  } catch (err) {
+    console.error('Erro ao listar políticas:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar políticas.' });
+  }
+}
+
+async function buscarPorId(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ erro: 'ID inválido.' });
+    const politica = await politicasModel.buscarPorId(id);
+    if (!politica) return res.status(404).json({ erro: 'Política não encontrada.' });
+    res.json(politica);
+  } catch (err) {
+    console.error('Erro ao buscar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao buscar política.' });
+  }
+}
+
+async function criar(req, res) {
+  try {
+    const { descricao, perc_desconto, dt_inicio, dt_fim } = req.body;
+    if (!descricao || perc_desconto == null || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: descricao, perc_desconto, dt_inicio, dt_fim.' });
+    }
+    if (new Date(dt_inicio) >= new Date(dt_fim)) {
+      return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
+    }
+    const id = await politicasModel.criar(descricao.trim(), parseFloat(perc_desconto), dt_inicio, dt_fim);
+    res.status(201).json({ id, mensagem: 'Política criada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao criar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao criar política.' });
+  }
+}
+
+async function atualizar(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    const { descricao, perc_desconto, dt_inicio, dt_fim } = req.body;
+    if (!id) return res.status(400).json({ erro: 'ID inválido.' });
+    if (!descricao || perc_desconto == null || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: descricao, perc_desconto, dt_inicio, dt_fim.' });
+    }
+    if (new Date(dt_inicio) >= new Date(dt_fim)) {
+      return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
+    }
+
+    const existente = await politicasModel.buscarPorId(id);
+    if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
+
+    // Se as datas mudaram, revalidar conflitos dos produtos já vinculados
+    const dtInicioMudou = new Date(existente.DT_INICIO).toISOString() !== new Date(dt_inicio).toISOString();
+    const dtFimMudou = new Date(existente.DT_FIM).toISOString() !== new Date(dt_fim).toISOString();
+
+    if (dtInicioMudou || dtFimMudou) {
+      const codprods = await produtosModel.listarCodprods(id);
+      const conflitos = [];
+      for (const codprod of codprods) {
+        const conflito = await politicasModel.verificarConflitoProduto(codprod, dt_inicio, dt_fim, id);
+        if (conflito.length > 0) {
+          conflitos.push({ codprod, politica: conflito[0] });
+        }
+      }
+      if (conflitos.length > 0) {
+        const lista = conflitos.map(c =>
+          `Produto ${c.codprod} → política "${c.politica.DESCRICAO}" (${formatarData(c.politica.DT_INICIO)} a ${formatarData(c.politica.DT_FIM)})`
+        ).join('; ');
+        return res.status(409).json({
+          conflito: true,
+          mensagem: `A alteração de vigência causa conflito nos seguintes produtos: ${lista}. Resolva os conflitos antes de salvar.`,
+          conflitos,
+        });
+      }
+    }
+
+    await politicasModel.atualizar(id, descricao.trim(), parseFloat(perc_desconto), dt_inicio, dt_fim);
+    res.json({ mensagem: 'Política atualizada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao atualizar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao atualizar política.' });
+  }
+}
+
+async function excluir(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ erro: 'ID inválido.' });
+    const existente = await politicasModel.buscarPorId(id);
+    if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
+    await politicasModel.excluir(id);
+    res.json({ mensagem: 'Política excluída com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao excluir política:', err.message);
+    res.status(500).json({ erro: 'Erro ao excluir política.' });
+  }
+}
+
+async function replicar(req, res) {
+  try {
+    const idOrigem = parseInt(req.params.id);
+    const { descricao, dt_inicio, dt_fim } = req.body;
+
+    if (!idOrigem) return res.status(400).json({ erro: 'ID inválido.' });
+    if (!descricao || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: descricao, dt_inicio, dt_fim.' });
+    }
+    if (new Date(dt_inicio) >= new Date(dt_fim)) {
+      return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
+    }
+
+    const origem = await politicasModel.buscarPorId(idOrigem);
+    if (!origem) return res.status(404).json({ erro: 'Política de origem não encontrada.' });
+
+    const codprods = await produtosModel.listarCodprods(idOrigem);
+
+    // Verificar conflitos para cada produto com a nova vigência
+    // Exclui a política de origem da verificação (idOrigem como "politica atual")
+    const conflitos = [];
+    for (const codprod of codprods) {
+      const conflito = await politicasModel.verificarConflitoProduto(codprod, dt_inicio, dt_fim, idOrigem);
+      if (conflito.length > 0) {
+        conflitos.push({ codprod, politica: conflito[0] });
+      }
+    }
+
+    if (conflitos.length > 0) {
+      const lista = conflitos.map(c =>
+        `Produto ${c.codprod} → política "${c.politica.DESCRICAO}" (${formatarData(c.politica.DT_INICIO)} a ${formatarData(c.politica.DT_FIM)})`
+      ).join('; ');
+      return res.status(409).json({
+        conflito: true,
+        mensagem: `A replicação causa conflito de vigência nos seguintes produtos: ${lista}. Altere a vigência da nova política, exclua o produto da política conflitante, ou remova-o antes de replicar.`,
+        conflitos,
+      });
+    }
+
+    // Sem conflitos: criar nova política e copiar produtos
+    const novaPercDesconto = origem.PERC_DESCONTO;
+    const novoId = await politicasModel.criar(descricao.trim(), novaPercDesconto, dt_inicio, dt_fim);
+
+    for (const codprod of codprods) {
+      await produtosModel.adicionar(novoId, codprod);
+    }
+
+    res.status(201).json({ id: novoId, mensagem: `Política replicada com sucesso. Novo ID: ${novoId}.` });
+  } catch (err) {
+    console.error('Erro ao replicar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao replicar política.' });
+  }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, replicar };
