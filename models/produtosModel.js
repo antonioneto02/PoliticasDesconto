@@ -51,15 +51,13 @@ async function listarCodprods(idPolitica) {
 async function sincronizarProdutosNovos(idPolitica) {
   const [poolDw, poolPol] = await Promise.all([getPoolDw(), getPoolPoliticas()]);
 
-  const [ativos, existentes] = await Promise.all([
-    poolDw.request().query(`SELECT CODPROD FROM [dbo].[V_PRODUTOS_ATIVOS]`),
-    poolPol.request()
-      .input('idPolitica', sql.Int, idPolitica)
-      .query(`SELECT CODPROD FROM dbo.POLITICAS_DESCONTO_PRODUTOS WHERE ID_POLITICA = @idPolitica`),
+  const [ativos, ocupados] = await Promise.all([
+    poolDw.request().query(`SELECT DISTINCT CODPROD FROM [dbo].[V_PRODUTOS_ATIVOS] WHERE CODPROD IS NOT NULL`),
+    poolPol.request().query(`SELECT CODPROD FROM dbo.POLITICAS_DESCONTO_PRODUTOS WHERE ID_POLITICA IN (9, 10, 11)`),
   ]);
 
-  const existentesSet = new Set(existentes.recordset.map(r => r.CODPROD));
-  const novos = ativos.recordset.filter(r => !existentesSet.has(r.CODPROD));
+  const ocupadosSet = new Set(ocupados.recordset.map(r => r.CODPROD));
+  const novos = ativos.recordset.filter(r => !ocupadosSet.has(r.CODPROD));
 
   for (const { CODPROD } of novos) {
     await poolPol.request()
