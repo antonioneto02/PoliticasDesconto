@@ -1,17 +1,16 @@
 'use strict';
-
 require('dotenv').config();
 const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
-
+const morgan = require('morgan');
+const logger = require('./logger');
+const { swaggerUi, swaggerDocument } = require('./swagger');
 const politicasController = require('./controllers/politicasController');
 const produtosController = require('./controllers/produtosController');
-
 const app = express();
 const PORT = process.env.PORT || 3014;
 
-// Middleware
 app.use(compression());
 app.use(cors({
   origin: [
@@ -20,56 +19,40 @@ app.use(cors({
     'http://192.168.0.88:3000',
     'https://192.168.0.88:3000',
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan('combined', {
+  stream: { write: (msg) => logger.info(msg.trim()) },
+}));
 
-// Health check
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'politicas-desconto', port: PORT });
 });
 
-// ── Produtos DW (busca) ───────────────────────────────────────────────────────
-// GET /api/produtos/buscar?codprod=XXX
 app.get('/api/produtos/buscar', produtosController.buscarProduto);
-
-// ── Políticas ─────────────────────────────────────────────────────────────────
-// GET    /api/politicas
 app.get('/api/politicas', politicasController.listar);
-
-// GET    /api/politicas/:id
 app.get('/api/politicas/:id', politicasController.buscarPorId);
-
-// POST   /api/politicas
 app.post('/api/politicas', politicasController.criar);
-
-// PUT    /api/politicas/:id
 app.put('/api/politicas/:id', politicasController.atualizar);
-
-// DELETE /api/politicas/:id
 app.delete('/api/politicas/:id', politicasController.excluir);
-
-// POST   /api/politicas/:id/replicar
+app.patch('/api/politicas/:id/ativar', politicasController.ativar);
+app.patch('/api/politicas/:id/inativar', politicasController.inativar);
 app.post('/api/politicas/:id/replicar', politicasController.replicar);
-
-// ── Produtos de uma política ──────────────────────────────────────────────────
-// GET    /api/politicas/:id/produtos
 app.get('/api/politicas/:id/produtos', produtosController.listarProdutos);
-
-// POST   /api/politicas/:id/produtos
 app.post('/api/politicas/:id/produtos', produtosController.adicionarProduto);
-
-// DELETE /api/politicas/:id/produtos/:codprod
 app.delete('/api/politicas/:id/produtos/:codprod', produtosController.removerProduto);
 
-// Error handler
 app.use((err, req, res, next) => {
-  console.error('Erro não tratado:', err);
+  logger.error('Erro não tratado: %s', err.stack || err.message);
   res.status(500).json({ erro: 'Erro interno do servidor.' });
 });
 
 app.listen(PORT, () => {
-  console.log(`Políticas de Desconto rodando em http://localhost:${PORT}`);
+  logger.info(`Políticas de Desconto rodando em http://localhost:${PORT}`);
+  logger.info(`Swagger disponível em http://localhost:${PORT}/api-docs`);
 });

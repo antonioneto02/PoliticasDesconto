@@ -31,8 +31,6 @@ async function listarProdutos(req, res) {
     if (!politica) return res.status(404).json({ erro: 'Política não encontrada.' });
 
     const produtos = await produtosModel.listarPorPolitica(idPolitica);
-
-    // Enriquecer com descrição do DW
     const enriquecidos = await Promise.all(produtos.map(async (p) => {
       try {
         const dw = await produtosModel.buscarProdutoDw(p.CODPROD);
@@ -59,12 +57,8 @@ async function adicionarProduto(req, res) {
 
     const politica = await politicasModel.buscarPorId(idPolitica);
     if (!politica) return res.status(404).json({ erro: 'Política não encontrada.' });
-
-    // Verificar se produto existe no DW
     const produto = await produtosModel.buscarProdutoDw(codprod.trim());
     if (!produto) return res.status(404).json({ erro: `Produto "${codprod}" não encontrado na base de produtos ativos.` });
-
-    // Verificar conflito de vigência
     const conflitos = await politicasModel.verificarConflitoProduto(
       codprod.trim(),
       politica.DT_INICIO,
@@ -96,10 +90,8 @@ async function removerProduto(req, res) {
   try {
     const idPolitica = parseInt(req.params.id);
     const { codprod } = req.params;
-
     if (!idPolitica) return res.status(400).json({ erro: 'ID de política inválido.' });
     if (!codprod) return res.status(400).json({ erro: 'Código do produto não informado.' });
-
     const linhas = await produtosModel.remover(idPolitica, codprod);
     if (linhas === 0) return res.status(404).json({ erro: 'Produto não encontrado nesta política.' });
 

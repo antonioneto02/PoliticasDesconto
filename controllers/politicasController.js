@@ -63,8 +63,6 @@ async function atualizar(req, res) {
 
     const existente = await politicasModel.buscarPorId(id);
     if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
-
-    // Se as datas mudaram, revalidar conflitos dos produtos já vinculados
     const dtInicioMudou = new Date(existente.DT_INICIO).toISOString() !== new Date(dt_inicio).toISOString();
     const dtFimMudou = new Date(existente.DT_FIM).toISOString() !== new Date(dt_fim).toISOString();
 
@@ -111,6 +109,34 @@ async function excluir(req, res) {
   }
 }
 
+async function ativar(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ erro: 'ID inválido.' });
+    const existente = await politicasModel.buscarPorId(id);
+    if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
+    await politicasModel.ativar(id);
+    res.json({ mensagem: 'Política ativada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao ativar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao ativar política.' });
+  }
+}
+
+async function inativar(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ erro: 'ID inválido.' });
+    const existente = await politicasModel.buscarPorId(id);
+    if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
+    await politicasModel.inativar(id);
+    res.json({ mensagem: 'Política inativada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao inativar política:', err.message);
+    res.status(500).json({ erro: 'Erro ao inativar política.' });
+  }
+}
+
 async function replicar(req, res) {
   try {
     const idOrigem = parseInt(req.params.id);
@@ -128,9 +154,6 @@ async function replicar(req, res) {
     if (!origem) return res.status(404).json({ erro: 'Política de origem não encontrada.' });
 
     const codprods = await produtosModel.listarCodprods(idOrigem);
-
-    // Verificar conflitos para cada produto com a nova vigência
-    // Exclui a política de origem da verificação (idOrigem como "politica atual")
     const conflitos = [];
     for (const codprod of codprods) {
       const conflito = await politicasModel.verificarConflitoProduto(codprod, dt_inicio, dt_fim, idOrigem);
@@ -149,8 +172,6 @@ async function replicar(req, res) {
         conflitos,
       });
     }
-
-    // Sem conflitos: criar nova política e copiar produtos
     const novaPercDesconto = origem.PERC_DESCONTO;
     const novoId = await politicasModel.criar(descricao.trim(), novaPercDesconto, dt_inicio, dt_fim);
 
@@ -165,4 +186,4 @@ async function replicar(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, excluir, replicar };
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, ativar, inativar, replicar };
