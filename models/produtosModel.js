@@ -48,6 +48,22 @@ async function listarCodprods(idPolitica) {
   return result.recordset.map(r => r.CODPROD);
 }
 
+async function sincronizarProdutosNovos(idPolitica) {
+  const pool = await getPoolPoliticas();
+  const result = await pool.request()
+    .input('idPolitica', sql.Int, idPolitica)
+    .query(`
+      INSERT INTO dbo.POLITICAS_DESCONTO_PRODUTOS (ID_POLITICA, CODPROD)
+      SELECT @idPolitica, v.CODPROD
+      FROM [dw].[dbo].[V_PRODUTOS_ATIVOS] v
+      WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.POLITICAS_DESCONTO_PRODUTOS p
+        WHERE p.ID_POLITICA = @idPolitica AND p.CODPROD = v.CODPROD
+      )
+    `);
+  return result.rowsAffected[0];
+}
+
 async function buscarProdutoDw(codprod) {
   const pool = await getPoolDw();
   const result = await pool.request()
@@ -60,4 +76,4 @@ async function buscarProdutoDw(codprod) {
   return result.recordset[0] || null;
 }
 
-module.exports = { listarPorPolitica, adicionar, remover, listarCodprods, buscarProdutoDw };
+module.exports = { listarPorPolitica, adicionar, remover, listarCodprods, buscarProdutoDw, sincronizarProdutosNovos };

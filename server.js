@@ -43,6 +43,7 @@ app.delete('/api/politicas/:id', politicasController.excluir);
 app.patch('/api/politicas/:id/ativar', politicasController.ativar);
 app.patch('/api/politicas/:id/inativar', politicasController.inativar);
 app.post('/api/politicas/:id/replicar', politicasController.replicar);
+app.post('/api/politicas/11/sincronizar', politicasController.sincronizarPolitica11);
 app.get('/api/politicas/:id/produtos', produtosController.listarProdutos);
 app.post('/api/politicas/:id/produtos', produtosController.adicionarProduto);
 app.delete('/api/politicas/:id/produtos/:codprod', produtosController.removerProduto);
@@ -52,7 +53,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ erro: 'Erro interno do servidor.' });
 });
 
+async function executarSincronizacao() {
+  try {
+    const { sincronizarProdutosNovos } = require('./models/produtosModel');
+    const adicionados = await sincronizarProdutosNovos(11);
+    if (adicionados > 0) logger.info(`Sincronização automática: ${adicionados} produto(s) novo(s) adicionado(s) à política 11.`);
+  } catch (err) {
+    logger.error('Erro na sincronização automática da política 11: %s', err.message);
+  }
+}
+
 app.listen(PORT, () => {
   logger.info(`Políticas de Desconto rodando em http://localhost:${PORT}`);
   logger.info(`Swagger disponível em http://localhost:${PORT}/api-docs`);
+  executarSincronizacao();
+  setInterval(executarSincronizacao, 60 * 60 * 1000); // a cada 1 hora
 });

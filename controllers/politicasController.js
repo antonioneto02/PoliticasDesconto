@@ -186,4 +186,14 @@ async function replicar(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, excluir, ativar, inativar, replicar };
+async function sincronizarPolitica11(_req, res) {
+  try {
+    const adicionados = await produtosModel.sincronizarProdutosNovos(11);
+    res.json({ adicionados, mensagem: `Sincronização concluída. ${adicionados} produto(s) novo(s) adicionado(s) à política 11.` });
+  } catch (err) {
+    console.error('Erro ao sincronizar política 11:', err.message);
+    res.status(500).json({ erro: 'Erro ao sincronizar política 11.' });
+  }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, ativar, inativar, replicar, sincronizarPolitica11 };
