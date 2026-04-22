@@ -49,19 +49,29 @@ async function listarCodprods(idPolitica) {
 }
 
 async function sincronizarProdutosNovos(idPolitica) {
-  const pool = await getPoolPoliticas();
-  const result = await pool.request()
-    .input('idPolitica', sql.Int, idPolitica)
-    .query(`
-      INSERT INTO dbo.POLITICAS_DESCONTO_PRODUTOS (ID_POLITICA, CODPROD)
-      SELECT @idPolitica, v.CODPROD
-      FROM [dw].[dbo].[V_PRODUTOS_ATIVOS] v
-      WHERE NOT EXISTS (
-        SELECT 1 FROM dbo.POLITICAS_DESCONTO_PRODUTOS p
-        WHERE p.ID_POLITICA = @idPolitica AND p.CODPROD = v.CODPROD
-      )
-    `);
-  return result.rowsAffected[0];
+  const [poolDw, poolPol] = await Promise.all([getPoolDw(), getPoolPoliticas()]);
+
+  const [ativos, existentes] = await Promise.all([
+    poolDw.request().query(`SELECT CODPROD FROM [dbo].[V_PRODUTOS_ATIVOS]`),
+    poolPol.request()
+      .input('idPolitica', sql.Int, idPolitica)
+      .query(`SELECT CODPROD FROM dbo.POLITICAS_DESCONTO_PRODUTOS WHERE ID_POLITICA = @idPolitica`),
+  ]);
+
+  const existentesSet = new Set(existentes.recordset.map(r => r.CODPROD));
+  const novos = ativos.recordset.filter(r => !existentesSet.has(r.CODPROD));
+
+  for (const { CODPROD } of novos) {
+    await poolPol.request()
+      .input('idPolitica', sql.Int, idPolitica)
+      .input('codprod', sql.VarChar(30), CODPROD)
+      .query(`
+        IF NOT EXISTS (SELECT 1 FROM dbo.POLITICAS_DESCONTO_PRODUTOS WHERE ID_POLITICA = @idPolitica AND CODPROD = @codprod)
+          INSERT INTO dbo.POLITICAS_DESCONTO_PRODUTOS (ID_POLITICA, CODPROD) VALUES (@idPolitica, @codprod)
+      `);
+  }
+
+  return novos.length;
 }
 
 async function buscarProdutoDw(codprod) {

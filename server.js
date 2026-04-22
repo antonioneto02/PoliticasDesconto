@@ -59,7 +59,7 @@ async function executarSincronizacao() {
     const adicionados = await sincronizarProdutosNovos(11);
     if (adicionados > 0) logger.info(`Sincronização automática: ${adicionados} produto(s) novo(s) adicionado(s) à política 11.`);
   } catch (err) {
-    logger.error('Erro na sincronização automática da política 11: %s', err.message);
+    logger.error(`Erro na sincronização automática da política 11: ${err.message}`);
   }
 }
 
