@@ -59,7 +59,7 @@ async function atualizar(id, descricao, percDesconto, dtInicio, dtFim) {
           PERC_DESCONTO = @percDesconto,
           DT_INICIO = @dtInicio,
           DT_FIM = @dtFim
-      WHERE ID = @id AND ATIVO = 1
+      WHERE ID = @id
     `);
 }
 
@@ -75,7 +75,7 @@ async function ativar(id) {
   const pool = await getPoolPoliticas();
   await pool.request()
     .input('id', sql.Int, id)
-    .query(`UPDATE dbo.POLITICAS_DESCONTO SET ATIVO = 1 WHERE ID = @id`);
+    .query(`UPDATE dbo.POLITICAS_DESCONTO SET ATIVO = 1, DT_CRIACAO = GETDATE() WHERE ID = @id`);
 }
 
 async function inativar(id) {
