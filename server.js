@@ -35,6 +35,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/produtos/visao-geral', produtosController.listarTodosProdutosComPolitica);
+app.get('/api/produtos/sem-politica', produtosController.listarProdutosSemPolitica);
 app.get('/api/produtos/buscar', produtosController.buscarProduto);
 app.get('/api/politicas', politicasController.listar);
 app.get('/api/politicas/:id', politicasController.buscarPorId);

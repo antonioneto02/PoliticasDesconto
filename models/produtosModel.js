@@ -109,6 +109,28 @@ async function listarTodosProdutosComPolitica() {
   return result.recordset;
 }
 
+async function listarSemPolitica() {
+  const pool = await getPoolPoliticas();
+  const result = await pool.request().query(`
+    WITH PoliticaVigente AS (
+        SELECT pdp.CODPROD
+        FROM dbo.POLITICAS_DESCONTO_PRODUTOS pdp
+        INNER JOIN dbo.POLITICAS_DESCONTO pd ON pd.ID = pdp.ID_POLITICA
+        WHERE pd.ATIVO = 1
+          AND CAST(pd.DT_INICIO AS DATE) <= CAST(GETDATE() AS DATE)
+          AND CAST(pd.DT_FIM    AS DATE) >= CAST(GETDATE() AS DATE)
+    )
+    SELECT vp.SEQ, vp.FAMILIA, vp.CODPROD, vp.PRODUTO
+    FROM dw.dbo.V_PRODUTOS_ATIVOS vp
+    WHERE NOT EXISTS (
+        SELECT 1 FROM PoliticaVigente pv
+        WHERE pv.CODPROD COLLATE LATIN1_GENERAL_CI_AS = vp.CODPROD COLLATE LATIN1_GENERAL_CI_AS
+    )
+    ORDER BY vp.FAMILIA, vp.PRODUTO
+  `);
+  return result.recordset;
+}
+
 async function buscarProdutoDw(codprod) {
   const pool = await getPoolDw();
   const result = await pool.request()
@@ -121,4 +143,4 @@ async function buscarProdutoDw(codprod) {
   return result.recordset[0] || null;
 }
 
-module.exports = { listarPorPolitica, adicionar, remover, listarCodprods, buscarProdutoDw, sincronizarProdutosNovos, listarTodosProdutosComPolitica };
+module.exports = { listarPorPolitica, adicionar, remover, listarCodprods, buscarProdutoDw, sincronizarProdutosNovos, listarTodosProdutosComPolitica, listarSemPolitica };
