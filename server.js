@@ -8,6 +8,8 @@ const logger = require('./logger');
 const { swaggerUi, swaggerDocument } = require('./swagger');
 const politicasController = require('./controllers/politicasController');
 const produtosController = require('./controllers/produtosController');
+const bonificacoesController = require('./controllers/bonificacoesController');
+const bonificacoesItensController = require('./controllers/bonificacoesItensController');
 const app = express();
 const PORT = process.env.PORT || 3014;
 
@@ -48,6 +50,19 @@ app.post('/api/politicas/:id/replicar', politicasController.replicar);
 app.get('/api/politicas/:id/produtos', produtosController.listarProdutos);
 app.post('/api/politicas/:id/produtos', produtosController.adicionarProduto);
 app.delete('/api/politicas/:id/produtos/:codprod', produtosController.removerProduto);
+
+app.get('/api/bonificacoes', bonificacoesController.listar);
+app.get('/api/bonificacoes/:id', bonificacoesController.buscarPorId);
+app.post('/api/bonificacoes', bonificacoesController.criar);
+app.put('/api/bonificacoes/:id', bonificacoesController.atualizar);
+app.delete('/api/bonificacoes/:id', bonificacoesController.excluir);
+app.patch('/api/bonificacoes/:id/ativar', bonificacoesController.ativar);
+app.patch('/api/bonificacoes/:id/inativar', bonificacoesController.inativar);
+app.post('/api/bonificacoes/:id/replicar', bonificacoesController.replicar);
+app.get('/api/bonificacoes/:id/itens', bonificacoesItensController.listarItens);
+app.post('/api/bonificacoes/:id/itens', bonificacoesItensController.adicionarItem);
+app.put('/api/bonificacoes/:id/itens/:itemId', bonificacoesItensController.atualizarItem);
+app.delete('/api/bonificacoes/:id/itens/:itemId', bonificacoesItensController.removerItem);
 
 app.use((err, req, res, next) => {
   logger.error('Erro não tratado: %s', err.stack || err.message);
