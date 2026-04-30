@@ -112,21 +112,30 @@ async function listarTodosProdutosComPolitica() {
 async function listarSemPolitica() {
   const pool = await getPoolPoliticas();
   const result = await pool.request().query(`
-    WITH PoliticaVigente AS (
-        SELECT pdp.CODPROD
-        FROM dbo.POLITICAS_DESCONTO_PRODUTOS pdp
-        INNER JOIN dbo.POLITICAS_DESCONTO pd ON pd.ID = pdp.ID_POLITICA
-        WHERE pd.ATIVO = 1
-          AND CAST(pd.DT_INICIO AS DATE) <= CAST(GETDATE() AS DATE)
-          AND CAST(pd.DT_FIM    AS DATE) >= CAST(GETDATE() AS DATE)
-    )
-    SELECT vp.SEQ, vp.FAMILIA, vp.CODPROD, vp.PRODUTO
-    FROM dw.dbo.V_PRODUTOS_ATIVOS vp
-    WHERE NOT EXISTS (
-        SELECT 1 FROM PoliticaVigente pv
-        WHERE pv.CODPROD COLLATE LATIN1_GENERAL_CI_AS = vp.CODPROD COLLATE LATIN1_GENERAL_CI_AS
-    )
-    ORDER BY vp.FAMILIA, vp.PRODUTO
+    SELECT DISTINCT
+        RTRIM(DA1.DA1_CODPRO)                                         AS CODPROD,
+        ISNULL(vp.PRODUTO, '')                                        AS PRODUTO,
+        ISNULL(vp.FAMILIA, '')                                        AS FAMILIA
+    FROM p11_prod..H02010 H02
+    INNER JOIN p11_prod..DA0010 DA0 ON H02.H02_CODTAB = DA0.DA0_CODTAB AND DA0.D_E_L_E_T_ = ''
+    INNER JOIN p11_prod..DA1010 DA1 ON DA0.DA0_CODTAB = DA1.DA1_CODTAB AND DA1.D_E_L_E_T_ = ''
+    LEFT  JOIN dw.dbo.V_PRODUTOS_ATIVOS vp
+           ON vp.CODPROD COLLATE LATIN1_GENERAL_CI_AS = RTRIM(DA1.DA1_CODPRO) COLLATE LATIN1_GENERAL_CI_AS
+    WHERE DA0.D_E_L_E_T_ = ''
+      AND DA0.DA0_DATDE  <= CAST(GETDATE() AS DATE)
+      AND DA0.DA0_DATATE >= CAST(GETDATE() AS DATE)
+      AND DA1.DA1_ATIVO  = 1
+      AND DA1.DA1_VMINB  > 0
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dbo.POLITICAS_DESCONTO_PRODUTOS pdp
+          INNER JOIN dbo.POLITICAS_DESCONTO pd ON pd.ID = pdp.ID_POLITICA
+          WHERE pd.ATIVO = 1
+            AND CAST(pd.DT_INICIO AS DATE) <= CAST(GETDATE() AS DATE)
+            AND CAST(pd.DT_FIM    AS DATE) >= CAST(GETDATE() AS DATE)
+            AND pdp.CODPROD COLLATE LATIN1_GENERAL_CI_AS = RTRIM(DA1.DA1_CODPRO) COLLATE LATIN1_GENERAL_CI_AS
+      )
+    ORDER BY FAMILIA, PRODUTO, CODPROD
   `);
   return result.recordset;
 }
