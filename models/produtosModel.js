@@ -113,12 +113,13 @@ async function listarSemPolitica() {
   const pool = await getPoolPoliticas();
   const result = await pool.request().query(`
     SELECT DISTINCT
-        RTRIM(DA1.DA1_CODPRO)                                         AS CODPROD,
-        ISNULL(vp.PRODUTO, '')                                        AS PRODUTO,
-        ISNULL(vp.FAMILIA, '')                                        AS FAMILIA
+        RTRIM(DA1.DA1_CODPRO)      AS CODPROD,
+        ISNULL(vp.PRODUTO, '')     AS PRODUTO,
+        A.FAMILIA                  AS FAMILIA
     FROM p11_prod..H02010 H02
     INNER JOIN p11_prod..DA0010 DA0 ON H02.H02_CODTAB = DA0.DA0_CODTAB AND DA0.D_E_L_E_T_ = ''
     INNER JOIN p11_prod..DA1010 DA1 ON DA0.DA0_CODTAB = DA1.DA1_CODTAB AND DA1.D_E_L_E_T_ = ''
+    INNER JOIN dw.dbo.SGC005    A   ON RTRIM(DA1.DA1_CODPRO) = A.CODPROD
     LEFT  JOIN dw.dbo.V_PRODUTOS_ATIVOS vp
            ON vp.CODPROD COLLATE LATIN1_GENERAL_CI_AS = RTRIM(DA1.DA1_CODPRO) COLLATE LATIN1_GENERAL_CI_AS
     WHERE DA0.D_E_L_E_T_ = ''
