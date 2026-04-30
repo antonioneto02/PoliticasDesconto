@@ -34,6 +34,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'politicas-desconto', port: PORT });
 });
 
+app.get('/api/produtos/visao-geral', produtosController.listarTodosProdutosComPolitica);
 app.get('/api/produtos/buscar', produtosController.buscarProduto);
 app.get('/api/politicas', politicasController.listar);
 app.get('/api/politicas/:id', politicasController.buscarPorId);

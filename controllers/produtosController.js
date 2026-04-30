@@ -86,6 +86,16 @@ async function adicionarProduto(req, res) {
   }
 }
 
+async function listarTodosProdutosComPolitica(req, res) {
+  try {
+    const dados = await produtosModel.listarTodosProdutosComPolitica();
+    res.json(dados);
+  } catch (err) {
+    console.error('Erro ao listar produtos com política:', err.message);
+    res.status(500).json({ erro: 'Erro ao listar produtos.' });
+  }
+}
+
 async function removerProduto(req, res) {
   try {
     const idPolitica = parseInt(req.params.id);
@@ -102,4 +112,4 @@ async function removerProduto(req, res) {
   }
 }
 
-module.exports = { buscarProduto, listarProdutos, adicionarProduto, removerProduto };
+module.exports = { buscarProduto, listarProdutos, adicionarProduto, removerProduto, listarTodosProdutosComPolitica };
