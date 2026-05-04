@@ -6,9 +6,9 @@ async function listar() {
   const pool = await getPool();
   const result = await pool.request().query(`
     SELECT pb.ID, pb.CODGRUPO,
-           ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO = pb.CODGRUPO), '') AS NOME_GRUPO,
+           ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO COLLATE Latin1_General_CI_AS = pb.CODGRUPO COLLATE Latin1_General_CI_AS), '') AS NOME_GRUPO,
            pb.PRODUTO,
-           ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD = pb.PRODUTO), '') AS NOME_PRODUTO,
+           ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD COLLATE Latin1_General_CI_AS = pb.PRODUTO COLLATE Latin1_General_CI_AS), '') AS NOME_PRODUTO,
            pb.QTD_VENDIDA, pb.QTD_BONI,
            CONVERT(varchar(19), pb.DT_INICIO, 120) AS DT_INICIO,
            CONVERT(varchar(19), pb.DT_FIM,    120) AS DT_FIM,
@@ -25,9 +25,9 @@ async function buscarPorId(id) {
     .input('id', sql.Int, id)
     .query(`
       SELECT pb.ID, pb.CODGRUPO,
-             ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO = pb.CODGRUPO), '') AS NOME_GRUPO,
+             ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO COLLATE Latin1_General_CI_AS = pb.CODGRUPO COLLATE Latin1_General_CI_AS), '') AS NOME_GRUPO,
              pb.PRODUTO,
-             ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD = pb.PRODUTO), '') AS NOME_PRODUTO,
+             ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD COLLATE Latin1_General_CI_AS = pb.PRODUTO COLLATE Latin1_General_CI_AS), '') AS NOME_PRODUTO,
              pb.QTD_VENDIDA, pb.QTD_BONI,
              CONVERT(varchar(19), pb.DT_INICIO, 120) AS DT_INICIO,
              CONVERT(varchar(19), pb.DT_FIM,    120) AS DT_FIM,
@@ -96,7 +96,7 @@ async function buscarGrupoDw(codgrupo) {
   const pool = await getPool();
   const result = await pool.request()
     .input('codgrupo', sql.VarChar(30), codgrupo)
-    .query(`SELECT TOP 1 CODGRUPO, GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO = @codgrupo`);
+    .query(`SELECT TOP 1 CODGRUPO, GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO COLLATE Latin1_General_CI_AS = @codgrupo COLLATE Latin1_General_CI_AS`);
   return result.recordset[0] || null;
 }
 
