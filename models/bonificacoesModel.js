@@ -1,9 +1,9 @@
 'use strict';
 
-const { getPoolPoliticas, sql } = require('../config/dbConfig');
+const { getPoolBonificacao: getPool, sql } = require('../config/dbConfig');
 
 async function listar() {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request().query(`
     SELECT ID, GRUPO,
            CONVERT(varchar(19), DT_INICIO, 120) AS DT_INICIO,
@@ -16,7 +16,7 @@ async function listar() {
 }
 
 async function buscarPorId(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('id', sql.Int, id)
     .query(`
@@ -31,7 +31,7 @@ async function buscarPorId(id) {
 }
 
 async function criar(grupo, dtInicio, dtFim) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('grupo', sql.VarChar(255), grupo)
     .input('dtInicio', sql.DateTime2, new Date(dtInicio))
@@ -45,7 +45,7 @@ async function criar(grupo, dtInicio, dtFim) {
 }
 
 async function atualizar(id, grupo, dtInicio, dtFim) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   await pool.request()
     .input('id', sql.Int, id)
     .input('grupo', sql.VarChar(255), grupo)
@@ -59,7 +59,7 @@ async function atualizar(id, grupo, dtInicio, dtFim) {
 }
 
 async function excluir(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   await pool.request().input('id', sql.Int, id)
     .query(`DELETE FROM dbo.POLITICAS_BONIFICACAO_ITENS WHERE ID_POLITICA = @id`);
   await pool.request().input('id', sql.Int, id)
@@ -67,14 +67,14 @@ async function excluir(id) {
 }
 
 async function ativar(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   await pool.request()
     .input('id', sql.Int, id)
     .query(`UPDATE dbo.POLITICAS_BONIFICACAO SET ATIVO = 1, DT_CRIACAO = GETDATE() WHERE ID = @id`);
 }
 
 async function inativar(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   await pool.request()
     .input('id', sql.Int, id)
     .query(`UPDATE dbo.POLITICAS_BONIFICACAO SET ATIVO = 0 WHERE ID = @id`);

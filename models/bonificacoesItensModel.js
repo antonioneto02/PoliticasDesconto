@@ -1,9 +1,9 @@
 'use strict';
 
-const { getPoolPoliticas, sql } = require('../config/dbConfig');
+const { getPoolBonificacao: getPool, sql } = require('../config/dbConfig');
 
 async function listarPorPolitica(idPolitica) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('idPolitica', sql.Int, idPolitica)
     .query(`
@@ -18,7 +18,7 @@ async function listarPorPolitica(idPolitica) {
 }
 
 async function buscarPorId(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('id', sql.Int, id)
     .query(`SELECT ID, ID_POLITICA, PRODUTO, QTD_VENDIDA, QTD_BONI, DT_INCLUSAO
@@ -27,7 +27,7 @@ async function buscarPorId(id) {
 }
 
 async function adicionar(idPolitica, produto, qtdVendida, qtdBoni) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('idPolitica', sql.Int, idPolitica)
     .input('produto', sql.VarChar(30), produto)
@@ -42,7 +42,7 @@ async function adicionar(idPolitica, produto, qtdVendida, qtdBoni) {
 }
 
 async function atualizar(id, qtdVendida, qtdBoni) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   await pool.request()
     .input('id', sql.Int, id)
     .input('qtdVendida', sql.Decimal(10, 3), qtdVendida)
@@ -55,7 +55,7 @@ async function atualizar(id, qtdVendida, qtdBoni) {
 }
 
 async function remover(id) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('id', sql.Int, id)
     .query(`DELETE FROM dbo.POLITICAS_BONIFICACAO_ITENS WHERE ID = @id`);
@@ -63,7 +63,7 @@ async function remover(id) {
 }
 
 async function listarProdutos(idPolitica) {
-  const pool = await getPoolPoliticas();
+  const pool = await getPool();
   const result = await pool.request()
     .input('idPolitica', sql.Int, idPolitica)
     .query(`SELECT PRODUTO FROM dbo.POLITICAS_BONIFICACAO_ITENS WHERE ID_POLITICA = @idPolitica`);
