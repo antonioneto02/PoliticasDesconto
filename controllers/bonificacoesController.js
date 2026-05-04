@@ -28,14 +28,16 @@ async function buscarPorId(req, res) {
 
 async function criar(req, res) {
   try {
-    const { grupo, dt_inicio, dt_fim } = req.body;
-    if (!grupo || !dt_inicio || !dt_fim) {
-      return res.status(400).json({ erro: 'Campos obrigatórios: grupo, dt_inicio, dt_fim.' });
+    const { codgrupo, dt_inicio, dt_fim } = req.body;
+    if (!codgrupo || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, dt_inicio, dt_fim.' });
     }
     if (new Date(dt_inicio) >= new Date(dt_fim)) {
       return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
     }
-    const id = await bonificacoesModel.criar(grupo.trim(), dt_inicio, dt_fim);
+    const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
+    if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
+    const id = await bonificacoesModel.criar(codgrupo.trim(), dt_inicio, dt_fim);
     res.status(201).json({ id, mensagem: 'Política de bonificação criada com sucesso.' });
   } catch (err) {
     console.error('Erro ao criar bonificação:', err.message);
@@ -46,17 +48,19 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   try {
     const id = parseInt(req.params.id);
-    const { grupo, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, dt_inicio, dt_fim } = req.body;
     if (!id) return res.status(400).json({ erro: 'ID inválido.' });
-    if (!grupo || !dt_inicio || !dt_fim) {
-      return res.status(400).json({ erro: 'Campos obrigatórios: grupo, dt_inicio, dt_fim.' });
+    if (!codgrupo || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, dt_inicio, dt_fim.' });
     }
     if (new Date(dt_inicio) >= new Date(dt_fim)) {
       return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
     }
     const existente = await bonificacoesModel.buscarPorId(id);
     if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
-    await bonificacoesModel.atualizar(id, grupo.trim(), dt_inicio, dt_fim);
+    const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
+    if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
+    await bonificacoesModel.atualizar(id, codgrupo.trim(), dt_inicio, dt_fim);
     res.json({ mensagem: 'Política de bonificação atualizada com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar bonificação:', err.message);
@@ -109,23 +113,24 @@ async function inativar(req, res) {
 async function replicar(req, res) {
   try {
     const idOrigem = parseInt(req.params.id);
-    const { grupo, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, dt_inicio, dt_fim } = req.body;
     if (!idOrigem) return res.status(400).json({ erro: 'ID inválido.' });
-    if (!grupo || !dt_inicio || !dt_fim) {
-      return res.status(400).json({ erro: 'Campos obrigatórios: grupo, dt_inicio, dt_fim.' });
+    if (!codgrupo || !dt_inicio || !dt_fim) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, dt_inicio, dt_fim.' });
     }
     if (new Date(dt_inicio) >= new Date(dt_fim)) {
       return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
     }
     const origem = await bonificacoesModel.buscarPorId(idOrigem);
     if (!origem) return res.status(404).json({ erro: 'Política de origem não encontrada.' });
+    const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
+    if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
 
-    const novoId = await bonificacoesModel.criar(grupo.trim(), dt_inicio, dt_fim);
+    const novoId = await bonificacoesModel.criar(codgrupo.trim(), dt_inicio, dt_fim);
     const itens = await bonificacoesItensModel.listarPorPolitica(idOrigem);
     for (const item of itens) {
       await bonificacoesItensModel.adicionar(novoId, item.PRODUTO, item.QTD_VENDIDA, item.QTD_BONI);
     }
-
     res.status(201).json({ id: novoId, mensagem: `Política replicada com sucesso. Novo ID: ${novoId}.` });
   } catch (err) {
     console.error('Erro ao replicar bonificação:', err.message);
@@ -133,4 +138,17 @@ async function replicar(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, excluir, ativar, inativar, replicar };
+async function buscarGrupo(req, res) {
+  try {
+    const { codgrupo } = req.query;
+    if (!codgrupo) return res.status(400).json({ erro: 'Parâmetro codgrupo é obrigatório.' });
+    const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
+    if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
+    res.json(grupo);
+  } catch (err) {
+    console.error('Erro ao buscar grupo:', err.message);
+    res.status(500).json({ erro: 'Erro ao buscar grupo.' });
+  }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, ativar, inativar, replicar, buscarGrupo };

@@ -52,6 +52,7 @@ app.post('/api/politicas/:id/produtos', produtosController.adicionarProduto);
 app.delete('/api/politicas/:id/produtos/:codprod', produtosController.removerProduto);
 
 app.get('/api/bonificacoes', bonificacoesController.listar);
+app.get('/api/bonificacoes/grupos/buscar', bonificacoesController.buscarGrupo);
 app.get('/api/bonificacoes/:id', bonificacoesController.buscarPorId);
 app.post('/api/bonificacoes', bonificacoesController.criar);
 app.put('/api/bonificacoes/:id', bonificacoesController.atualizar);
