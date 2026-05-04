@@ -1,7 +1,6 @@
 'use strict';
 
 const bonificacoesModel = require('../models/bonificacoesModel');
-const bonificacoesItensModel = require('../models/bonificacoesItensModel');
 const produtosModel = require('../models/produtosModel');
 
 async function listar(req, res) {
@@ -128,10 +127,6 @@ async function replicar(req, res) {
     const prod = await produtosModel.buscarProdutoDw(produto.trim());
     if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
     const novoId = await bonificacoesModel.criar(codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
-    const itens = await bonificacoesItensModel.listarPorPolitica(idOrigem);
-    for (const item of itens) {
-      await bonificacoesItensModel.adicionar(novoId, item.PRODUTO, item.QTD_VENDIDA, item.QTD_BONI);
-    }
     res.status(201).json({ id: novoId, mensagem: `Política replicada com sucesso. Novo ID: ${novoId}.` });
   } catch (err) {
     console.error('Erro ao replicar bonificação:', err.message);

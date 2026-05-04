@@ -77,8 +77,6 @@ async function atualizar(id, codgrupo, produto, qtdVendida, qtdBoni, dtInicio, d
 async function excluir(id) {
   const pool = await getPool();
   await pool.request().input('id', sql.Int, id)
-    .query(`DELETE FROM dbo.POLITICAS_BONIFICACAO_ITENS WHERE ID_POLITICA = @id`);
-  await pool.request().input('id', sql.Int, id)
     .query(`DELETE FROM dbo.POLITICAS_BONIFICACAO WHERE ID = @id`);
 }
 
