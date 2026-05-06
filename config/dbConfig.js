@@ -37,9 +37,18 @@ const configBonificacao = {
   ...baseOptions,
 };
 
+const configPoliticaDesconto = {
+  user: process.env.DB_USER_ERP,
+  password: process.env.DB_PASSWORD_ERP,
+  server: process.env.DB_SERVER_ERP,
+  database: process.env.DB_DATABASE_POLDESC,
+  ...baseOptions,
+};
+
 let _poolPoliticas = null;
 let _poolDw = null;
 let _poolBonificacao = null;
+let _poolPoliticaDesconto = null;
 
 async function getPoolPoliticas() {
   if (_poolPoliticas && _poolPoliticas.connected) return _poolPoliticas;
@@ -65,4 +74,12 @@ async function getPoolBonificacao() {
   return _poolBonificacao;
 }
 
-module.exports = { getPoolPoliticas, getPoolDw, getPoolBonificacao, sql };
+async function getPoolPoliticaDesconto() {
+  if (_poolPoliticaDesconto && _poolPoliticaDesconto.connected) return _poolPoliticaDesconto;
+  const pool = new sql.ConnectionPool(configPoliticaDesconto);
+  _poolPoliticaDesconto = await pool.connect();
+  _poolPoliticaDesconto.on('error', () => { _poolPoliticaDesconto = null; });
+  return _poolPoliticaDesconto;
+}
+
+module.exports = { getPoolPoliticas, getPoolDw, getPoolBonificacao, getPoolPoliticaDesconto, sql };

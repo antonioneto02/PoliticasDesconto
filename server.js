@@ -9,6 +9,7 @@ const { swaggerUi, swaggerDocument } = require('./swagger');
 const politicasController = require('./controllers/politicasController');
 const produtosController = require('./controllers/produtosController');
 const bonificacoesController = require('./controllers/bonificacoesController');
+const politicaDescontoController = require('./controllers/politicaDescontoController');
 const app = express();
 const PORT = process.env.PORT || 3014;
 
@@ -49,6 +50,16 @@ app.post('/api/politicas/:id/replicar', politicasController.replicar);
 app.get('/api/politicas/:id/produtos', produtosController.listarProdutos);
 app.post('/api/politicas/:id/produtos', produtosController.adicionarProduto);
 app.delete('/api/politicas/:id/produtos/:codprod', produtosController.removerProduto);
+
+app.get('/api/politicas-desconto/grupos/buscar', politicaDescontoController.buscarGrupo);
+app.get('/api/politicas-desconto',              politicaDescontoController.listar);
+app.get('/api/politicas-desconto/:id',          politicaDescontoController.buscarPorId);
+app.post('/api/politicas-desconto',             politicaDescontoController.criar);
+app.put('/api/politicas-desconto/:id',          politicaDescontoController.atualizar);
+app.delete('/api/politicas-desconto/:id',       politicaDescontoController.excluir);
+app.patch('/api/politicas-desconto/:id/ativar',   politicaDescontoController.ativar);
+app.patch('/api/politicas-desconto/:id/inativar', politicaDescontoController.inativar);
+app.post('/api/politicas-desconto/:id/replicar',  politicaDescontoController.replicar);
 
 app.get('/api/bonificacoes', bonificacoesController.listar);
 app.get('/api/bonificacoes/grupos/buscar', bonificacoesController.buscarGrupo);
