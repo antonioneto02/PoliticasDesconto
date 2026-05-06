@@ -26,9 +26,11 @@ async function buscarPorId(req, res) {
 }
 
 function _validarCampos(body, res) {
-  const { codgrupo, produto, perc_desc, dt_inicio, dt_fim } = body;
-  if (!codgrupo || !produto || perc_desc == null || !dt_inicio || !dt_fim)
-    return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, produto, perc_desc, dt_inicio, dt_fim.' });
+  const { codgrupo, produto, qtd_vendida, perc_desc, dt_inicio, dt_fim } = body;
+  if (!codgrupo || !produto || qtd_vendida == null || perc_desc == null || !dt_inicio || !dt_fim)
+    return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, produto, qtd_vendida, perc_desc, dt_inicio, dt_fim.' });
+  if (parseFloat(qtd_vendida) <= 0)
+    return res.status(400).json({ erro: 'A quantidade vendida deve ser maior que zero.' });
   if (parseFloat(perc_desc) < 0 || parseFloat(perc_desc) > 100)
     return res.status(400).json({ erro: 'O percentual de desconto deve estar entre 0 e 100.' });
   if (new Date(dt_inicio) >= new Date(dt_fim))
@@ -39,12 +41,12 @@ function _validarCampos(body, res) {
 async function criar(req, res) {
   try {
     const err = _validarCampos(req.body, res); if (err) return;
-    const { codgrupo, produto, perc_desc, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, produto, qtd_vendida, perc_desc, dt_inicio, dt_fim } = req.body;
     const grupo = await politicaDescontoModel.buscarGrupoDw(codgrupo.trim());
     if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
     const prod = await produtosModel.buscarProdutoDw(produto.trim());
     if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
-    const id = await politicaDescontoModel.criar(codgrupo.trim(), produto.trim(), parseFloat(perc_desc), dt_inicio, dt_fim);
+    const id = await politicaDescontoModel.criar(codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(perc_desc), dt_inicio, dt_fim);
     res.status(201).json({ id, mensagem: 'Política de desconto criada com sucesso.' });
   } catch (err) {
     console.error('Erro ao criar política de desconto:', err.message);
@@ -57,14 +59,14 @@ async function atualizar(req, res) {
     const id = parseInt(req.params.id);
     if (!id) return res.status(400).json({ erro: 'ID inválido.' });
     const valErr = _validarCampos(req.body, res); if (valErr) return;
-    const { codgrupo, produto, perc_desc, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, produto, qtd_vendida, perc_desc, dt_inicio, dt_fim } = req.body;
     const existente = await politicaDescontoModel.buscarPorId(id);
     if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
     const grupo = await politicaDescontoModel.buscarGrupoDw(codgrupo.trim());
     if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
     const prod = await produtosModel.buscarProdutoDw(produto.trim());
     if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
-    await politicaDescontoModel.atualizar(id, codgrupo.trim(), produto.trim(), parseFloat(perc_desc), dt_inicio, dt_fim);
+    await politicaDescontoModel.atualizar(id, codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(perc_desc), dt_inicio, dt_fim);
     res.json({ mensagem: 'Política de desconto atualizada com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar política de desconto:', err.message);
@@ -120,15 +122,16 @@ async function replicar(req, res) {
     if (!idOrigem) return res.status(400).json({ erro: 'ID inválido.' });
     const origem = await politicaDescontoModel.buscarPorId(idOrigem);
     if (!origem) return res.status(404).json({ erro: 'Política de origem não encontrada.' });
-    const { codgrupo, perc_desc, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, qtd_vendida, perc_desc, dt_inicio, dt_fim } = req.body;
     if (!dt_inicio || !dt_fim) return res.status(400).json({ erro: 'dt_inicio e dt_fim são obrigatórios.' });
     if (new Date(dt_inicio) >= new Date(dt_fim))
       return res.status(400).json({ erro: 'A data de início deve ser anterior à data de fim.' });
     const novoGrupo = codgrupo ? codgrupo.trim() : origem.CODGRUPO;
-    const novoPerc  = perc_desc != null ? parseFloat(perc_desc) : parseFloat(origem.PERC_DESC);
+    const novaQtd   = qtd_vendida != null ? parseFloat(qtd_vendida) : parseFloat(origem.QTD_VENDIDA);
+    const novoPerc  = perc_desc   != null ? parseFloat(perc_desc)   : parseFloat(origem.PERC_DESC);
     const grupo = await politicaDescontoModel.buscarGrupoDw(novoGrupo);
     if (!grupo) return res.status(404).json({ erro: `Grupo "${novoGrupo}" não encontrado.` });
-    const novoId = await politicaDescontoModel.criar(novoGrupo, origem.PRODUTO, novoPerc, dt_inicio, dt_fim);
+    const novoId = await politicaDescontoModel.criar(novoGrupo, origem.PRODUTO, novaQtd, novoPerc, dt_inicio, dt_fim);
     res.status(201).json({ id: novoId, mensagem: `Política replicada com sucesso. Novo ID: ${novoId}.` });
   } catch (err) {
     console.error('Erro ao replicar política de desconto:', err.message);

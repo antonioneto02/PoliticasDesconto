@@ -19,6 +19,7 @@ BEGIN
         ID          INT IDENTITY(1,1)  NOT NULL,
         CODGRUPO    VARCHAR(30)        NOT NULL,
         PRODUTO     VARCHAR(30)        NOT NULL,
+        QTD_VENDIDA DECIMAL(10,3)      NOT NULL,
         PERC_DESC   DECIMAL(5,2)       NOT NULL,
         DT_INICIO   DATETIME2          NOT NULL,
         DT_FIM      DATETIME2          NOT NULL,
