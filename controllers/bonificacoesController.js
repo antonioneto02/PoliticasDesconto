@@ -1,7 +1,6 @@
 'use strict';
 
 const bonificacoesModel = require('../models/bonificacoesModel');
-const produtosModel = require('../models/produtosModel');
 
 async function listar(req, res) {
   try {
@@ -26,9 +25,9 @@ async function buscarPorId(req, res) {
 }
 
 async function _validarCampos(body, res) {
-  const { codgrupo, produto, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = body;
-  if (!codgrupo || !produto || qtd_vendida == null || qtd_boni == null || !dt_inicio || !dt_fim)
-    return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, produto, qtd_vendida, qtd_boni, dt_inicio, dt_fim.' });
+  const { codgrupo, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = body;
+  if (!codgrupo || qtd_vendida == null || qtd_boni == null || !dt_inicio || !dt_fim)
+    return res.status(400).json({ erro: 'Campos obrigatórios: codgrupo, qtd_vendida, qtd_boni, dt_inicio, dt_fim.' });
   if (parseFloat(qtd_vendida) <= 0 || parseFloat(qtd_boni) <= 0)
     return res.status(400).json({ erro: 'As quantidades devem ser maiores que zero.' });
   if (new Date(dt_inicio) >= new Date(dt_fim))
@@ -39,12 +38,10 @@ async function _validarCampos(body, res) {
 async function criar(req, res) {
   try {
     const err = await _validarCampos(req.body, res); if (err) return;
-    const { codgrupo, produto, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
     const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
     if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
-    const prod = await produtosModel.buscarProdutoDw(produto.trim());
-    if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
-    const id = await bonificacoesModel.criar(codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
+    const id = await bonificacoesModel.criar(codgrupo.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
     res.status(201).json({ id, mensagem: 'Política de bonificação criada com sucesso.' });
   } catch (err) {
     console.error('Erro ao criar bonificação:', err.message);
@@ -57,14 +54,12 @@ async function atualizar(req, res) {
     const id = parseInt(req.params.id);
     if (!id) return res.status(400).json({ erro: 'ID inválido.' });
     const valErr = await _validarCampos(req.body, res); if (valErr) return;
-    const { codgrupo, produto, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
     const existente = await bonificacoesModel.buscarPorId(id);
     if (!existente) return res.status(404).json({ erro: 'Política não encontrada.' });
     const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
     if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
-    const prod = await produtosModel.buscarProdutoDw(produto.trim());
-    if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
-    await bonificacoesModel.atualizar(id, codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
+    await bonificacoesModel.atualizar(id, codgrupo.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
     res.json({ mensagem: 'Política de bonificação atualizada com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar bonificação:', err.message);
@@ -119,14 +114,12 @@ async function replicar(req, res) {
     const idOrigem = parseInt(req.params.id);
     if (!idOrigem) return res.status(400).json({ erro: 'ID inválido.' });
     const valErr = await _validarCampos(req.body, res); if (valErr) return;
-    const { codgrupo, produto, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
+    const { codgrupo, qtd_vendida, qtd_boni, dt_inicio, dt_fim } = req.body;
     const origem = await bonificacoesModel.buscarPorId(idOrigem);
     if (!origem) return res.status(404).json({ erro: 'Política de origem não encontrada.' });
     const grupo = await bonificacoesModel.buscarGrupoDw(codgrupo.trim());
     if (!grupo) return res.status(404).json({ erro: `Grupo "${codgrupo}" não encontrado.` });
-    const prod = await produtosModel.buscarProdutoDw(produto.trim());
-    if (!prod) return res.status(404).json({ erro: `Produto "${produto}" não encontrado.` });
-    const novoId = await bonificacoesModel.criar(codgrupo.trim(), produto.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
+    const novoId = await bonificacoesModel.criar(codgrupo.trim(), parseFloat(qtd_vendida), parseFloat(qtd_boni), dt_inicio, dt_fim);
     res.status(201).json({ id: novoId, mensagem: `Política replicada com sucesso. Novo ID: ${novoId}.` });
   } catch (err) {
     console.error('Erro ao replicar bonificação:', err.message);

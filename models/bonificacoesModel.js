@@ -7,8 +7,6 @@ async function listar() {
   const result = await pool.request().query(`
     SELECT pb.ID, pb.CODGRUPO,
            ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO COLLATE Latin1_General_CI_AS = pb.CODGRUPO COLLATE Latin1_General_CI_AS), '') AS NOME_GRUPO,
-           pb.PRODUTO,
-           ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD COLLATE Latin1_General_CI_AS = pb.PRODUTO COLLATE Latin1_General_CI_AS), '') AS NOME_PRODUTO,
            pb.QTD_VENDIDA, pb.QTD_BONI,
            CONVERT(varchar(19), pb.DT_INICIO, 120) AS DT_INICIO,
            CONVERT(varchar(19), pb.DT_FIM,    120) AS DT_FIM,
@@ -26,8 +24,6 @@ async function buscarPorId(id) {
     .query(`
       SELECT pb.ID, pb.CODGRUPO,
              ISNULL((SELECT TOP 1 GRUPO FROM dw.dbo.DIM_GRUPOS WHERE CODGRUPO COLLATE Latin1_General_CI_AS = pb.CODGRUPO COLLATE Latin1_General_CI_AS), '') AS NOME_GRUPO,
-             pb.PRODUTO,
-             ISNULL((SELECT TOP 1 PRODUTO FROM dw.dbo.V_PRODUTOS_ATIVOS WHERE CODPROD COLLATE Latin1_General_CI_AS = pb.PRODUTO COLLATE Latin1_General_CI_AS), '') AS NOME_PRODUTO,
              pb.QTD_VENDIDA, pb.QTD_BONI,
              CONVERT(varchar(19), pb.DT_INICIO, 120) AS DT_INICIO,
              CONVERT(varchar(19), pb.DT_FIM,    120) AS DT_FIM,
@@ -38,36 +34,34 @@ async function buscarPorId(id) {
   return result.recordset[0] || null;
 }
 
-async function criar(codgrupo, produto, qtdVendida, qtdBoni, dtInicio, dtFim) {
+async function criar(codgrupo, qtdVendida, qtdBoni, dtInicio, dtFim) {
   const pool = await getPool();
   const result = await pool.request()
     .input('codgrupo',   sql.VarChar(30),    codgrupo)
-    .input('produto',    sql.VarChar(30),    produto)
     .input('qtdVendida', sql.Decimal(10, 3), qtdVendida)
     .input('qtdBoni',    sql.Decimal(10, 3), qtdBoni)
     .input('dtInicio',   sql.DateTime2,      new Date(dtInicio))
     .input('dtFim',      sql.DateTime2,      new Date(dtFim))
     .query(`
-      INSERT INTO dbo.POLITICAS_BONIFICACAO (CODGRUPO, PRODUTO, QTD_VENDIDA, QTD_BONI, DT_INICIO, DT_FIM)
+      INSERT INTO dbo.POLITICAS_BONIFICACAO (CODGRUPO, QTD_VENDIDA, QTD_BONI, DT_INICIO, DT_FIM)
       OUTPUT INSERTED.ID
-      VALUES (@codgrupo, @produto, @qtdVendida, @qtdBoni, @dtInicio, @dtFim)
+      VALUES (@codgrupo, @qtdVendida, @qtdBoni, @dtInicio, @dtFim)
     `);
   return result.recordset[0].ID;
 }
 
-async function atualizar(id, codgrupo, produto, qtdVendida, qtdBoni, dtInicio, dtFim) {
+async function atualizar(id, codgrupo, qtdVendida, qtdBoni, dtInicio, dtFim) {
   const pool = await getPool();
   await pool.request()
     .input('id',         sql.Int,            id)
     .input('codgrupo',   sql.VarChar(30),    codgrupo)
-    .input('produto',    sql.VarChar(30),    produto)
     .input('qtdVendida', sql.Decimal(10, 3), qtdVendida)
     .input('qtdBoni',    sql.Decimal(10, 3), qtdBoni)
     .input('dtInicio',   sql.DateTime2,      new Date(dtInicio))
     .input('dtFim',      sql.DateTime2,      new Date(dtFim))
     .query(`
       UPDATE dbo.POLITICAS_BONIFICACAO
-      SET CODGRUPO = @codgrupo, PRODUTO = @produto,
+      SET CODGRUPO = @codgrupo,
           QTD_VENDIDA = @qtdVendida, QTD_BONI = @qtdBoni,
           DT_INICIO = @dtInicio, DT_FIM = @dtFim
       WHERE ID = @id
