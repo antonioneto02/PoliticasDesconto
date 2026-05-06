@@ -5,14 +5,14 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = {
   openapi: '3.0.0',
   info: {
-    title: 'Políticas de Desconto – CINI',
+    title: 'Regras de Desconto – CINI',
     version: '1.0.0',
-    description: 'API REST para gestão de políticas de desconto por produto. Sem autenticação (uso interno).',
+    description: 'API REST para gestão de regras de desconto por produto. Sem autenticação (uso interno).',
   },
   servers: [{ url: 'http://localhost:3014', description: 'Servidor local' }],
   tags: [
     { name: 'Saúde', description: 'Health check da API' },
-    { name: 'Políticas', description: 'CRUD de políticas de desconto' },
+    { name: 'Políticas', description: 'CRUD de regras de desconto' },
     { name: 'Produtos', description: 'Produtos vinculados a políticas' },
   ],
   paths: {

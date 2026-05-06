@@ -1,10 +1,10 @@
 {
-  "name": "politicas-desconto",
+  "name": "regras-desconto",
   "version": "1.0.0",
-  "description": "Backend REST para gestão de políticas de desconto",
+  "description": "Backend REST para gestão de regras de desconto",
   "main": "server.js",
   "scripts": {
-    "start": "title Politicas Desconto && node server.js",
+    "start": "title Regras Desconto && node server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

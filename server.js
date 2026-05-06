@@ -32,7 +32,7 @@ app.use(morgan('combined', {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'politicas-desconto', port: PORT });
+  res.json({ status: 'ok', service: 'regras-desconto', port: PORT });
 });
 
 app.get('/api/produtos/visao-geral', produtosController.listarTodosProdutosComPolitica);
@@ -66,6 +66,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  logger.info(`Políticas de Desconto rodando em http://localhost:${PORT}`);
+  logger.info(`Regras de Desconto rodando em http://localhost:${PORT}`);
   logger.info(`Swagger disponível em http://localhost:${PORT}/api-docs`);
 });
